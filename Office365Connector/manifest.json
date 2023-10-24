@@ -1,0 +1,12 @@
+{
+    "configuration": {
+        "title": "Microsoft Office 365 connector",
+        "type": "object",
+        "properties": {}
+    },
+    "description": "Microsoft Office 365 is an online service, providing the Microsoft Office Products.",
+    "name": "Microsoft Office365 connector",
+    "uuid": "82a0bcb4-6cfd-42bb-aa8d-32106e636178",
+    "slug": "office365connector",
+    "version": "0.1"
+}
