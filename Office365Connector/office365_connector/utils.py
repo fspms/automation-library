@@ -2,6 +2,7 @@
 This module defines the model for intakes configurations.
 """
 
+from urllib.parse import urlparse
 import uuid
 from datetime import datetime
 
@@ -12,6 +13,30 @@ from sqlalchemy.orm import backref
 
 
 INTAKE_SETTINGS_UUID = "intake_settings.uuid"
+OFFICE365_AUTHORITY_DEFAULT = "https://login.microsoftonline.com/common"
+OFFICE365_URL_BASE = "https://manage.office.com/api/v1.0/{tenant_id}/activity/feed"
+OFFICE365_ACTIVE_SUBSCRIPTION_STATUS = "enabled"
+
+
+def normalize_url(url: str, tenant_id: str | None = None) -> str:
+    """
+    Normalize the url
+
+    :param str url: The url to normalize
+    :return: The normalized url
+    :rtype: str
+    """
+    uri = urlparse(url)
+
+    if tenant_id is None:
+        parts = uri.path.split("/")
+        if len(parts) > 0:
+            tenant_id = parts[1]
+        else:
+            tenant_id = "common"
+
+    return urlunsplit((uri.scheme, uri.hostname, tenant_id, None, None))
+
 
 class IntakeSetting(db.Model):
     """Represents an abstract view of an intake configuration. This model
@@ -68,6 +93,7 @@ class Office365IntakeSetting(IntakeSetting):
 
     __mapper_args__ = {"polymorphic_identity": "office365"}
 
+
 def create_setting_office365(intake_uuid: str):
     """Return the intake setting for Office365
 
@@ -101,5 +127,3 @@ def create_setting_office365(intake_uuid: str):
     )
     db.session.add(setting)
     db.session.commit()
-
-
