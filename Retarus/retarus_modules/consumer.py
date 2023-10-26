@@ -1,20 +1,22 @@
-from queue import SimpleQueue
+from queue import Queue
 from threading import Event, Thread
-from typing import Tuple
+from typing import Tuple, Callable
 
 import orjson
-from sekoia_automation.connector import Connector
 from websocket import WebSocketApp, WebSocketTimeoutException
+
+from retarus_modules.configuration import RetarusConfig
 
 
 class RetarusEventsConsumer(Thread):
     """Handler for receiving events from a websocket"""
 
-    def __init__(self, connector: Connector, queue: SimpleQueue):
+    def __init__(self, configuration: RetarusConfig, queue: Queue, logger: Callable, logger_exception: Callable):
         super().__init__()
-        self.connector = connector
         self.queue = queue
-        self.configuration = connector.configuration
+        self.configuration = configuration
+        self.log = logger
+        self.log_exception = logger_exception
 
         # Event used to stop the thread
         self._stop_event = Event()
@@ -44,7 +46,7 @@ class RetarusEventsConsumer(Thread):
     def on_message(self, _, event: str) -> None:
         """Callback method called when the websocket receives a message
 
-        It will send the received message to the queue for consumtpion by the forwarder
+        It will send the received message to the queue for consumption by the forwarder
 
         Args:
             _ (_type_): _description_
@@ -54,7 +56,7 @@ class RetarusEventsConsumer(Thread):
             message = orjson.loads(event)
             self.queue.put(message)
         except orjson.JSONDecodeError as ex:
-            self.connector.log_exception(ex, message="Failed to consume event")
+            self.log_exception(ex, message="Failed to consume event")
 
     def on_error(self, _, error: Exception):
         """Callback method called when the websocket encounters an exception
@@ -67,17 +69,17 @@ class RetarusEventsConsumer(Thread):
         """
         if isinstance(error, WebSocketTimeoutException):
             # add a gentler message for timeout
-            self.connector.log(message="Websocket timed out", level="warning")
+            self.log(message="Websocket timed out", level="warning")
         else:
-            self.connector.log(message=f"Websocket error: {error}", level="error")
+            self.log(message=f"Websocket error: {error}", level="error")
 
     def on_close(self, *_):
         """Callback method called when the websocket is closed"""
-        self.connector.log(message="Closing socket connection", level="info")
+        self.log(message="Closing socket connection", level="info")
 
     def run(self):
         """Start the websocket thread then wait for the stop event to be set and close the websocket when it happens"""
-        self.connector.log(message=f"Connection to stream {self.configuration.ws_url}", level="info")
+        self.log(message=f"Connection to stream {self.configuration.ws_url}", level="info")
 
         websocket, websocket_thread = self.create_websocket()
         websocket_thread.start()
@@ -85,3 +87,12 @@ class RetarusEventsConsumer(Thread):
         self._stop_event.wait()
 
         websocket.close()
+
+    @property
+    def is_running(self) -> bool:
+        """Helper method to check if the stop event has been set
+
+        Returns:
+            bool: False if _stop_event is set, True otherwise
+        """
+        return not self._stop_event.is_set()

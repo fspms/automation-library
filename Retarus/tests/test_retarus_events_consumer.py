@@ -4,12 +4,12 @@ from json import JSONDecodeError
 import pytest
 from websocket import WebSocketTimeoutException
 
-from retarus_modules.retarus_events_consumer import RetarusEventsConsumer
+from retarus_modules.consumer import RetarusEventsConsumer
 
 
 @pytest.fixture
 def consumer(connector, queue):
-    return RetarusEventsConsumer(connector, queue)
+    return RetarusEventsConsumer(connector.configuration, queue, connector.log, connector.log_exception)
 
 
 def test_consumer_on_error(consumer, connector):
@@ -47,7 +47,7 @@ def test_consumer_on_message_json_error(consumer, connector):
     consumer.on_message(None, "invalid json")
 
     log_arguments = connector.log_exception.call_args_list[0]
-    connector.log_exception.assert_called_once
+    connector.log_exception.assert_called_once()
     assert isinstance(log_arguments.args[0], JSONDecodeError)
     assert log_arguments.kwargs["message"] == "Failed to consume event"
 

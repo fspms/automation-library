@@ -1,6 +1,6 @@
 from sekoia_automation.module import Module
 
-from retarus_modules.retarus_connector import RetarusConnector
+from retarus_modules.connector import RetarusConnector
 
 if __name__ == "__main__":
     module = Module()
