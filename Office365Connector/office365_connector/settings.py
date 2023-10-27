@@ -2,7 +2,6 @@
 This module defines the model for intakes configurations.
 """
 
-from urllib.parse import urlparse
 import uuid
 from datetime import datetime
 
@@ -13,29 +12,6 @@ from sqlalchemy.orm import backref
 
 
 INTAKE_SETTINGS_UUID = "intake_settings.uuid"
-OFFICE365_AUTHORITY_DEFAULT = "https://login.microsoftonline.com/common"
-OFFICE365_URL_BASE = "https://manage.office.com/api/v1.0/{tenant_id}/activity/feed"
-OFFICE365_ACTIVE_SUBSCRIPTION_STATUS = "enabled"
-
-
-def normalize_url(url: str, tenant_id: str | None = None) -> str:
-    """
-    Normalize the url
-
-    :param str url: The url to normalize
-    :return: The normalized url
-    :rtype: str
-    """
-    uri = urlparse(url)
-
-    if tenant_id is None:
-        parts = uri.path.split("/")
-        if len(parts) > 0:
-            tenant_id = parts[1]
-        else:
-            tenant_id = "common"
-
-    return urlunsplit((uri.scheme, uri.hostname, tenant_id, None, None))
 
 
 class IntakeSetting(db.Model):
@@ -93,37 +69,3 @@ class Office365IntakeSetting(IntakeSetting):
 
     __mapper_args__ = {"polymorphic_identity": "office365"}
 
-
-def create_setting_office365(intake_uuid: str):
-    """Return the intake setting for Office365
-
-    :param str intake_uuid: The identifier of the intake the setting belong to
-    :raise: sic.exceptions.IntakeDoesNotExistsError
-    :raise: sic.exceptions.IntakeSettingDoesNotExistsError
-    """
-    # check the existence of the intake
-    intake = self._get_intake(intake_uuid)
-
-    enrich_current_action(
-        name="intake-office365-creation",
-        communities=intake.community_uuid,
-        parameters={"intake": {"uuid": str(intake.uuid), "name": intake.name}},
-    )
-
-    # check if the office 365 setting already exist
-    setting = Office365IntakeSetting.query.filter_by(intake_uuid=intake.uuid).first()
-    if setting is not None:
-        raise IntakeSettingAlreadyExistError(intake_uuid=intake_uuid, type="office365")
-
-    # create the setting
-    setting = Office365IntakeSetting(
-        uuid=uuid.uuid4(),
-        short_id=generate_short_id(prefix="IS"),
-        intake_uuid=intake_uuid,
-        community_uuid=intake.community_uuid,
-        created_at=datetime.utcnow(),
-        created_by=self.profile.identity,
-        created_by_type=self.profile.type,
-    )
-    db.session.add(setting)
-    db.session.commit()

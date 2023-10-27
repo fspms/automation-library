@@ -3,15 +3,14 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from datetime import datetime
 from typing import Any
+from urllib.parse import urlparse, urlunsplit
 
 # thrid parties
 import msal
 import requests
+
+from office365_connector.constants import OFFICE365_AUTHORITY_DEFAULT, OFFICE365_URL_BASE, OFFICE365_ACTIVE_SUBSCRIPTION_STATUS
 from office365_connector.errors import ApplicationAuthenticationFailed, FailedToActivateO365Subscription, FailedToGetO365AuditContent, FailedToGetO365SubscriptionContents, FailedToListO365Subscriptions
-
-from office365_connector.utils import OFFICE365_ACTIVE_SUBSCRIPTION_STATUS, OFFICE365_AUTHORITY_DEFAULT, OFFICE365_URL_BASE, normalize_url
-
-
 class Office365API:
     def __init__(
         self,
@@ -25,7 +24,7 @@ class Office365API:
         self._app = msal.ConfidentialClientApplication(
             client_id,
             client_credential=client_secret,
-            authority=normalize_url(OFFICE365_AUTHORITY_DEFAULT, tenant_id),
+            authority=self._normalize_office365_url(),
         )
         self._session = requests.session()
         self._token_expiration = 0
@@ -215,3 +214,23 @@ class Office365API:
                 )
 
             return content
+
+
+    def _normalize_office365_urls(self) -> str:
+        """
+        Normalize the url
+
+        :param str url: The url to normalize
+        :return: The normalized url
+        :rtype: str
+        """
+        uri = urlparse(OFFICE365_AUTHORITY_DEFAULT)
+
+        if self.tenant_id is None:
+            parts = uri.path.split("/")
+            if len(parts) > 0:
+                self.tenant_id = parts[1]
+            else:
+                self.tenant_id = "common"
+
+        return urlunsplit((uri.scheme, uri.hostname, self.tenant_id, None, None))
