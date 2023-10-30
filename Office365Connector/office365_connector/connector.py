@@ -84,13 +84,13 @@ class Office365Connector(Connector):
     def check_for_duplicates(self, events: list[dict]) -> list[dict]:
         deduplicated_events: list[dict] = []
         for event in events:
-            if not self.event_in_cache(event["id"]):
+            if not self._event_in_cache(event["id"]):
                 deduplicated_events.append(event)
                 EVENTS_CACHE[event["id"]] = datetime.now()
         return deduplicated_events
 
     @lru_cache
-    def event_in_cache(self, event_id: str) -> bool:
+    def _event_in_cache(self, event_id: str) -> bool:
         return event_id in EVENTS_CACHE
 
     def activate_subscriptions(self):
