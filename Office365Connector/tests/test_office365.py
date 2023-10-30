@@ -3,17 +3,6 @@ from unittest.mock import patch
 import requests_mock
 from faker import Faker
 
-from sic.api.intakes.business import Business as IntakeBusiness
-from sic.services.generation_mode_service import generation_mode_service
-from sic.workers.intakes.office365.tasks import (
-    office365_activate_subscriptions,
-    office365_activity_pull,
-    office365_pull_contents,
-)
-from tests.generator.customer import CustomerGenerator
-from tests.generator.entity import EntityGenerator
-from tests.generator.intake import IntakeGenerator
-from tests.workers.base import WorkerBaseTestCase
 
 
 class O365TasksTestCase(WorkerBaseTestCase, IntakeGenerator, CustomerGenerator, EntityGenerator):

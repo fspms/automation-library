@@ -2,8 +2,7 @@ from datetime import datetime
 from time import sleep
 import uuid
 from sekoia_automation.connector import Connector
-from office365_connector.settings import Office365IntakeSetting
-from sekoia.common.utils import generate_short_id
+from office365_connector.settings import Office365IntakeSettings
 from pathlib import Path
 
 class Office365Connector(Connector):
@@ -14,14 +13,10 @@ class Office365Connector(Connector):
         data_path: Path | None = None,
     ):
         super().__init__(data_path=data_path)
-        self.settings = Office365IntakeSetting(
+        self.settings = Office365IntakeSettings(
             uuid=uuid.uuid4(),
-            short_id=generate_short_id(prefix="IS"),
             intake_uuid=intake_uuid,
             community_uuid=intake_community_uuid,
-            created_at=datetime.utcnow(),
-            created_by=self.profile.identity,
-            created_by_type=self.profile.type,
         )
 
     def pull_content(self) -> list[dict]:
