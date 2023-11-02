@@ -9,8 +9,20 @@ from urllib.parse import urlparse, urlunsplit
 import msal
 import requests
 
-from office365_connector.constants import OFFICE365_AUTHORITY_DEFAULT, OFFICE365_URL_BASE, OFFICE365_ACTIVE_SUBSCRIPTION_STATUS
-from office365_connector.errors import ApplicationAuthenticationFailed, FailedToActivateO365Subscription, FailedToGetO365AuditContent, FailedToGetO365SubscriptionContents, FailedToListO365Subscriptions
+from office365_connector.constants import (
+    OFFICE365_AUTHORITY_DEFAULT,
+    OFFICE365_URL_BASE,
+    OFFICE365_ACTIVE_SUBSCRIPTION_STATUS,
+)
+from office365_connector.errors import (
+    ApplicationAuthenticationFailed,
+    FailedToActivateO365Subscription,
+    FailedToGetO365AuditContent,
+    FailedToGetO365SubscriptionContents,
+    FailedToListO365Subscriptions,
+)
+
+
 class Office365API:
     def __init__(
         self,
@@ -214,7 +226,6 @@ class Office365API:
                 )
 
             return content
-
 
     def _normalize_office365_urls(self) -> str:
         """

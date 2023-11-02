@@ -8,7 +8,6 @@ from sekoia_automation import constants
 from office365_connector.connector import Office365Connector
 
 
-
 @pytest.fixture
 def symphony_storage():
     original_storage = constants.DATA_STORAGE
@@ -18,19 +17,28 @@ def symphony_storage():
 
     rmtree(constants.DATA_STORAGE)
     constants.DATA_STORAGE = original_storage
-    
-    
+
+
 @pytest.fixture
 def connector(symphony_storage):
-    trigger = Office365Connector(data_path=symphony_storage)
-    trigger.module.configuration = {}
-    trigger.configuration = {
+    connector = Office365Connector(data_path=symphony_storage)
+    connector.module.configuration = {}
+    connector.configuration = {
+        "uuid": "0000",
+        "tenant_uuid": "1111",
+        "intake_uuid": "2222",
+        "community_uuid": "3333",
+        "client_id": 0,
+        "client_secret": "foo",
+        "publisher_id": 1,
+        "content_types": ["json"],
     }
-    trigger.log = Mock()
-    trigger.log_exception = Mock()
-    trigger.push_events_to_intakes = Mock()
-    yield trigger
+    connector.log = Mock()
+    connector.log_exception = Mock()
+    connector.push_events_to_intakes = Mock()
+    yield connector
+
 
 @pytest.fixture
 def event():
-    raise NotImplementedError
+    yield {"id": 42}

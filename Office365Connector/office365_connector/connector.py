@@ -1,13 +1,13 @@
+import json
 from datetime import datetime, timedelta
 from functools import lru_cache
 from threading import Event, Thread
 from time import sleep
 import time
-import uuid
 from sekoia_automation.connector import Connector
 from office365_connector.errors import FailedToActivateO365Subscription
 from office365_connector.office365_api import Office365API
-from office365_connector.settings import Office365IntakeSettings
+from office365_connector.configuration import Office365Configuration
 from pathlib import Path
 
 from prometheus_client import Counter, Histogram
@@ -17,7 +17,7 @@ EVENTS_CACHE = {}
 # Declare prometheus metrics
 prom_namespace = "sicconfapi_intakes"
 
-OUTCOMING_EVENTS = Counter(
+OUTGOING_EVENTS = Counter(
     name="forwarded_events",
     documentation="Number of events forwarded to SEKOIA.IO",
     namespace=prom_namespace,
@@ -41,23 +41,18 @@ def clear_cache(stop_event: Event):
 
 
 class Office365Connector(Connector):
+    configuration: Office365Configuration
+
     def __init__(
         self,
-        intake_uuid: str,
-        intake_community_uuid: str,
         data_path: Path | None = None,
     ):
         super().__init__(data_path=data_path)
-        self.settings = Office365IntakeSettings(
-            uuid=uuid.uuid4(),
-            intake_uuid=intake_uuid,
-            community_uuid=intake_community_uuid,
-        )
         self.client = Office365API(
-            client_id=self.settings.client_id,
-            client_secret=self.settings.client_secret,
-            tenant_id=self.settings.tenant_uuid,
-            publisher_id=self.settings.publisher_id,
+            client_id=str(self.configuration.client_id),
+            client_secret=self.configuration.client_secret,
+            tenant_id=self.configuration.tenant_uuid,
+            publisher_id=str(self.configuration.publisher_id),
         )
 
     def pull_content(self, last_pull_date: datetime) -> list[dict]:
@@ -77,9 +72,11 @@ class Office365Connector(Connector):
         return pulled_events
 
     def forward_events(self, events: list[dict]):
-        self.log(f"Pushing {len(events)} events to intake", level="info")
-        OUTCOMING_EVENTS.labels(intake_key=self.settings.intake_key, datasource="office365").inc()
-        self.push_events_to_intakes(events)
+        self.log(f"Pushing {len(events)} event(s) to intake", level="info")
+        OUTGOING_EVENTS.labels(intake_key=self.configuration.intake_key, datasource="office365").inc()
+
+        serialized_events: list[str] = [json.dumps(event) for event in events]
+        self.push_events_to_intakes(serialized_events)
 
     def check_for_duplicates(self, events: list[dict]) -> list[dict]:
         deduplicated_events: list[dict] = []
@@ -95,7 +92,7 @@ class Office365Connector(Connector):
 
     def activate_subscriptions(self):
         already_enabled_types = set(self.client.list_subscriptions())
-        missing_types = self.settings.content_types - already_enabled_types
+        missing_types = self.configuration.content_types - already_enabled_types
 
         enabled_types = []
         # Activate missing types
@@ -106,7 +103,7 @@ class Office365Connector(Connector):
             except FailedToActivateO365Subscription as exp:
                 self._logger.warning(
                     "Failed to activate subscription",
-                    tenant_id=self.settings.tenant_uuid,
+                    tenant_id=self.configuration.tenant_uuid,
                     content_type=content_type,
                     exp=exp,
                 )
@@ -117,9 +114,9 @@ class Office365Connector(Connector):
             raise FailedToActivateO365Subscription()
 
     def run(self):
-        stop_clear_cache_thread: Event = Event()
-        clear_cache_thread = Thread(target=clear_cache)
-        clear_cache_thread.start(stop_clear_cache_thread)
+        stop_event: Event = Event()
+        clear_cache_thread = Thread(target=clear_cache, args=(stop_event,))
+        clear_cache_thread.start()
 
         self.activate_subscriptions()
 
@@ -132,7 +129,7 @@ class Office365Connector(Connector):
             deduplicated_events = self.check_for_duplicates(events)
             self.forward_events(deduplicated_events)
 
-            FORWARD_EVENTS_DURATION.labels(intake_key=self.settings.intake_key, datasource="office365").observe(
+            FORWARD_EVENTS_DURATION.labels(intake_key=self.configuration.intake_key, datasource="office365").observe(
                 time.time() - start_time
             )
 
@@ -140,6 +137,6 @@ class Office365Connector(Connector):
             sleep(60)
 
         # Stop the connector executor
-        stop_clear_cache_thread.set()
+        stop_event.set()
         clear_cache_thread.join()
         self._executor.shutdown(wait=True)
