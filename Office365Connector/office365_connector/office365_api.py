@@ -42,7 +42,7 @@ class Office365API:
         self._token_expiration = 0
         self._publisher_id = publisher_id
 
-    def _authenticate_client(self) -> str:
+    def _authenticate_client(self):
         """
         Authenticate the application
         """
@@ -103,8 +103,7 @@ class Office365API:
         """
         List the subscriptions for the tenant
 
-        :param str tenant_id: The identifier of the tenant
-        :return: The list of active susbscriptions
+        :return: The list of active subscriptions
         :rtype: list
         """
         base_url = OFFICE365_URL_BASE.format(tenant_id=self.tenant_id)
@@ -227,11 +226,10 @@ class Office365API:
 
             return content
 
-    def _normalize_office365_urls(self) -> str:
+    def _normalize_office365_url(self) -> str:
         """
         Normalize the url
 
-        :param str url: The url to normalize
         :return: The normalized url
         :rtype: str
         """

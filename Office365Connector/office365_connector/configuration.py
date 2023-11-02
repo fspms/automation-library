@@ -13,7 +13,7 @@ class Office365Configuration(DefaultConnectorConfiguration):
     """
 
     uuid: str
-    tenant_uuid: str
+    tenant_id: str
     intake_uuid: str
     community_uuid: str
     client_id: int

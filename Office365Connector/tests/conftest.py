@@ -20,25 +20,44 @@ def symphony_storage():
 
 
 @pytest.fixture
-def connector(symphony_storage):
+def client():
+    client = Mock()
+    client.activate_subscription = Mock()
+    client.get_subscription_contents = Mock()
+    client.list_subscriptions = Mock()
+    client.get_content = Mock()
+    yield client
+
+
+@pytest.fixture
+def connector(symphony_storage, client, monkeypatch):
     connector = Office365Connector(data_path=symphony_storage)
     connector.module.configuration = {}
     connector.configuration = {
+        "intake_key": "foo",
+        "client_secret": "bar",
         "uuid": "0000",
-        "tenant_uuid": "1111",
         "intake_uuid": "2222",
         "community_uuid": "3333",
-        "client_id": 0,
-        "client_secret": "foo",
-        "publisher_id": 1,
-        "content_types": ["json"],
+        "client_id": "0",
+        "publisher_id": "1",
+        "tenant_id": "2",
+        "content_types": {"json"},
     }
     connector.log = Mock()
     connector.log_exception = Mock()
     connector.push_events_to_intakes = Mock()
+
+    # Need the heavy artillery to override a property in a fixture
+    monkeypatch.setattr("office365_connector.connector.Office365Connector.client", client)
     yield connector
 
 
 @pytest.fixture
 def event():
     yield {"id": 42}
+
+
+@pytest.fixture
+def other_event():
+    yield {"id": 9000}

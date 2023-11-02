@@ -1,6 +1,6 @@
 import json
 from datetime import datetime, timedelta
-from functools import lru_cache
+from functools import cached_property
 from threading import Event, Thread
 from time import sleep
 import time
@@ -15,7 +15,7 @@ from prometheus_client import Counter, Histogram
 EVENTS_CACHE = {}
 
 # Declare prometheus metrics
-prom_namespace = "sicconfapi_intakes"
+prom_namespace = "office365_intakes"
 
 OUTGOING_EVENTS = Counter(
     name="forwarded_events",
@@ -32,12 +32,15 @@ FORWARD_EVENTS_DURATION = Histogram(
 )
 
 
-def clear_cache(stop_event: Event):
+def clear_cache(stop_event: Event, sleep_duration: int = 600):
     while not stop_event.is_set():
+        to_delete: list[str] = []
         for event_id, insertion_timestamp in EVENTS_CACHE.items():
-            if datetime.now() - insertion_timestamp < timedelta(hours=6):
-                del EVENTS_CACHE[event_id]
-        sleep(600)
+            if datetime.now() - insertion_timestamp > timedelta(hours=6):
+                to_delete.append(event_id)
+        for id_to_delete in to_delete:
+            del EVENTS_CACHE[id_to_delete]
+        sleep(sleep_duration)
 
 
 class Office365Connector(Connector):
@@ -48,10 +51,13 @@ class Office365Connector(Connector):
         data_path: Path | None = None,
     ):
         super().__init__(data_path=data_path)
-        self.client = Office365API(
+
+    @cached_property
+    def client(self) -> Office365API:
+        return Office365API(
             client_id=str(self.configuration.client_id),
             client_secret=self.configuration.client_secret,
-            tenant_id=self.configuration.tenant_uuid,
+            tenant_id=self.configuration.tenant_id,
             publisher_id=str(self.configuration.publisher_id),
         )
 
@@ -86,8 +92,8 @@ class Office365Connector(Connector):
                 EVENTS_CACHE[event["id"]] = datetime.now()
         return deduplicated_events
 
-    @lru_cache
-    def _event_in_cache(self, event_id: str) -> bool:
+    @staticmethod
+    def _event_in_cache(event_id: str) -> bool:
         return event_id in EVENTS_CACHE
 
     def activate_subscriptions(self):
@@ -101,9 +107,10 @@ class Office365Connector(Connector):
                 self.client.activate_subscription(content_type)
                 enabled_types.append(content_type)
             except FailedToActivateO365Subscription as exp:
-                self._logger.warning(
+                self.log(
                     "Failed to activate subscription",
-                    tenant_id=self.configuration.tenant_uuid,
+                    level="warning",
+                    tenant_id=self.configuration.tenant_id,
                     content_type=content_type,
                     exp=exp,
                 )

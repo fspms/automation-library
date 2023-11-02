@@ -3,6 +3,9 @@ from unittest.mock import patch
 import requests_mock
 from faker import Faker
 
+from tests.customer import CustomerGenerator
+from tests.entity import EntityGenerator
+from tests.intake import IntakeGenerator
 
 
 class O365TasksTestCase(WorkerBaseTestCase, IntakeGenerator, CustomerGenerator, EntityGenerator):
