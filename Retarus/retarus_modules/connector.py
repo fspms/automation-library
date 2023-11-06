@@ -101,6 +101,9 @@ class RetarusConnector(Connector):
         Args:
             messages (dict[str, str]): List of messages to send to Symphony
         """
+        # TODO: change this, no need for creating stubs, forward events can take the messages as is 
+        # Just need to dump to string 
+        raise NotImplementedError
         stubs = []
         for message in messages:
             stub = {
