@@ -7,7 +7,7 @@ def test_block_ioc_action_success(requests_mock):
     action = ZscalerBlockIOC()
     action.module.configuration = {
         "base_url": "zscalerbeta.net",
-        "apikey": "EqusKSwWRW7M",
+        "api_key": "EqusKSwWRW7M",
         "username": "admin@16411777.zscalerbeta.net",
         "password": "xJO$c>(6I;)2",
     }
