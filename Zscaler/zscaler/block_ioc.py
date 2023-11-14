@@ -4,11 +4,16 @@ from sekoia_automation.action import Action
 from zscaler_api_talkers import ZiaTalker
 from requests import HTTPError
 
+
 class ZscalerBlockIOC(Action):
     def run(self, arguments: dict[str, Any]):
         try:
-            api=ZiaTalker(self.module.configuration["base_url"])
-            api.authenticate(api_key=self.module.configuration["apikey"], username=self.module.configuration["username"], password=self.module.configuration["password"])
+            api = ZiaTalker(self.module.configuration["base_url"])
+            api.authenticate(
+                api_key=self.module.configuration["apikey"],
+                username=self.module.configuration["username"],
+                password=self.module.configuration["password"],
+            )
         except Exception as e:
             self.error(f"ZIA authentication failed: {str(e)}")
 
@@ -17,7 +22,6 @@ class ZscalerBlockIOC(Action):
             self.log(f"IOC_list to block {IOC_list}")
         except Exception as e:
             self.log(f"Build of IOC list failed: {str(e)}")
-
 
         try:
             response = api.add_security_blacklist_urls(urls=IOC_list)

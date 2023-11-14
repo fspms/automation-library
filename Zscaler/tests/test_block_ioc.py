@@ -1,5 +1,6 @@
 from zscaler.block_ioc import ZscalerBlockIOC
 
+
 def test_block_ioc_action_success(requests_mock):
     mock_alert = requests_mock.post(url="https://thehive-project.org/api/alert", json={})
 
@@ -8,7 +9,7 @@ def test_block_ioc_action_success(requests_mock):
         "base_url": "zscalerbeta.net",
         "apikey": "EqusKSwWRW7M",
         "username": "admin@16411777.zscalerbeta.net",
-        "password": "xJO$c>(6I;)2"
+        "password": "xJO$c>(6I;)2",
     }
 
     result = action.run({"IoC": "185.216.70.222"})
