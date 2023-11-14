@@ -10,29 +10,31 @@ class ZscalerBlockIOC(Action):
         try:
             api = ZiaTalker(self.module.configuration["base_url"])
             api.authenticate(
-                api_key=self.module.configuration["apikey"],
+                api_key=self.module.configuration["api_key"],
                 username=self.module.configuration["username"],
                 password=self.module.configuration["password"],
             )
         except Exception as e:
-            self.error(f"ZIA authentication failed: {str(e)}")
+            print(f"ZIA authentication failed: {str(e)}")
 
         try:
             IOC_list = [arguments["IoC"]]
             self.log(f"IOC_list to block {IOC_list}")
         except Exception as e:
-            self.log(f"Build of IOC list failed: {str(e)}")
+            print(f"Build of IOC list failed: {str(e)}")
 
         try:
             response = api.add_security_blacklist_urls(urls=IOC_list)
             response.raise_for_status()
-            return response.json()
+            return response.status_code
         except HTTPError as e:
             self.error(str(e))
             if e.response is not None:
-                self.log(f"ZIA blacklist url update failed with status code: {e.response.status_code}")
-                self.log(f"Response: {e.response.text}")
+                print(f"ZIA blacklist url update failed with status code: {e.response.status_code}")
+                print(f"Response: {e.response.text}")
         except Exception as e:
             self.error(str(e))
+            if e.response is not None:
+                print(f"ZIA blacklist url update failed with error: {str(e)}")
 
         return None
