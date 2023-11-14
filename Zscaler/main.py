@@ -1,12 +1,9 @@
-from Zscaler import ZscalerModule
-from Zscaler.custom_iocs import (
-    ZscalerActionBlockIOC,
-    ZscalerActionPushIOCsBlock,
-)
+from sekoia_automation.module import Module
+
+from zscaler.block_ioc import ZscalerBlockIOC
 
 if __name__ == "__main__":
-    module = ZscalerModule()
-    module.register(ZscalerActionPushIOCsBlock, "push_iocs_block")
-    module.register(ZscalerActionBlockIOC, "block_ioc")
+    module = module()
+    module.register(ZscalerBlockIOC, "zscaler_block_ioc")
 
     module.run()
