@@ -34,7 +34,6 @@ class ZscalerBlockIOC(Action):
                 print(f"Response: {e.response.text}")
         except Exception as e:
             self.error(str(e))
-            if e.response is not None:
-                print(f"ZIA blacklist url update failed with error: {str(e)}")
+            print(f"ZIA blacklist url update failed with error: {str(e)}")
 
         return None
